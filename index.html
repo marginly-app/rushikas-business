@@ -341,7 +341,10 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
   .app.rail .send-to-computer{display:none;}
   .app.capture #navsec-out,
   .app.capture .nav-main>.tab-btn[data-tab="banks"],
-  .app.capture #navsec-shop .tab-btn[data-tab="reports"]{display:none;}
+  .app.capture #navsec-shop .tab-btn[data-tab="reports"],
+  /* Money/accountant views live on the laptop, not the selling phone. */
+  .app.capture #navsec-in .tab-btn[data-tab="receivables"],
+  .app.capture #tab-overview .ov-grid{display:none;}
 
   .role-picker{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;}
   .role-btn{
@@ -2538,7 +2541,7 @@ function applyDeviceRole(){
   if(isPhone){
     /* Don't strand her on a tab that capture mode hides. */
     const active = document.querySelector('.tab-btn[data-tab].active');
-    const keep = ['overview','sales','sales-returns','receivables','inventory','customers','settings','assistant'];
+    const keep = ['overview','sales','sales-returns','inventory','customers','settings','assistant'];
     if(active && !keep.includes(active.dataset.tab)) showTab('sales');
   }
 }
@@ -6345,6 +6348,19 @@ function renderOverview(){
     .filter(s=>String(s.date||'').startsWith(thisMonth))
     .reduce((s,x)=>s+(Number(x.total)||0), 0);
   const stockCount = state.items.reduce((s,i)=>s+(Number(i.qty)||0), 0);
+
+  /* On the selling phone (capture mode) this is a capture pad, not a dashboard:
+     no money figures, no "who owes me" — that's the laptop/accountant's view.
+     Just the two counts she actually uses while out selling. */
+  if(typeof deviceRole === 'function' && deviceRole() === 'phone'){
+    statsEl.innerHTML = `
+      <div class="stat"><div class="label">In stock</div><div class="value">${stockCount}</div></div>
+      <div class="stat"><div class="label">Customers</div><div class="value">${state.customers.length}</div></div>
+    `;
+    const ow = document.getElementById('ovOwing'); if(ow) ow.innerHTML = '';
+    const rc = document.getElementById('ovRecent'); if(rc) rc.innerHTML = '';
+    return;
+  }
 
   statsEl.innerHTML = `
     <div class="stat ${owed>0?'warn':'good'}"><div class="label">Owed to you</div><div class="value">${fmt(owed)}</div></div>

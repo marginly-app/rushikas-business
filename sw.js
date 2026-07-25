@@ -3,7 +3,7 @@
    first visit. It only ever caches the app's own files — it never touches or
    transmits the business data, which lives in the browser's local storage on
    this device. Bump CACHE_NAME whenever you deploy a new index.html. */
-const CACHE_NAME = 'rushika-app-v10';
+const CACHE_NAME = 'rushika-app-v11';
 const ASSETS = [
   './',
   './index.html',
