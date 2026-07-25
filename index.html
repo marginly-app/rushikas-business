@@ -932,6 +932,8 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
   .field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
   .field-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
   .field-note{font-size:12.5px;color:var(--text-faint);margin-top:4px;line-height:1.5;}
+  .field-note.ok{color:var(--sage);font-weight:600;}
+  .field-note.warn{color:var(--alert);font-weight:600;}
   .modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:22px;}
   .total-line{
     display:flex;justify-content:space-between;align-items:center;padding:13px 15px;
@@ -1572,6 +1574,20 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
         <input type="file" id="phoneSetupFile" accept=".json,application/json" style="display:none;" onchange="handleMergeFile(event)">
         <p class="hint" style="margin-top:10px;">Loading a setup file only <strong>adds</strong> stock and customer
           names — it never erases sales you haven't sent yet.</p>
+
+        <div style="margin-top:22px;padding-top:18px;border-top:1px solid var(--line);">
+          <h4 style="margin:0 0 6px;font-size:15px;color:var(--text);">Load all my data</h4>
+          <p class="hint" style="margin-top:0;">Pulls the full customer, sales and balance data from your
+            encrypted backup. It’s scrambled online — only your passphrase can open it, right here on this phone.</p>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+            <input type="password" id="loadPassInput" placeholder="Enter your passphrase" autocomplete="off"
+                   style="flex:1;min-width:200px;" onkeydown="if(event.key==='Enter'){event.preventDefault();loadEncryptedData();}">
+            <button class="btn-primary" onclick="loadEncryptedData()">Load my data</button>
+          </div>
+          <p class="field-note" id="loadDataStatus" style="margin-top:8px;"></p>
+          <p class="hint" style="margin-top:4px;">Heads up: this <strong>replaces</strong> what’s on this phone, so
+            tap “Send my sales to the computer” first if you’ve recorded any sales here.</p>
+        </div>
       </div>
     </div>
 
@@ -2917,6 +2933,81 @@ async function requestPersistentStorage(){
   }catch(e){}
 }
 
+/* Shared restore: replace state with a backup's data, then re-render. */
+async function applyBackupData(incoming){
+  state.items = incoming.items || [];
+  state.purchases = incoming.purchases || [];
+  state.sales = incoming.sales || [];
+  state.purchaseReturns = incoming.purchaseReturns || [];
+  state.salesReturns = incoming.salesReturns || [];
+  state.banks = incoming.banks || [];
+  state.payments = incoming.payments || [];
+  state.credits = incoming.credits || [];
+  state.accounts = incoming.accounts || [];
+  state.transactions = incoming.transactions || [];
+  state.loans = incoming.loans || [];
+  state.customers = incoming.customers || [];
+  state.settings = Object.assign({ showAdvanced:false }, incoming.settings || {});
+  backfillCustomersFromSales();
+  applyAdvancedVisibility();
+  if(state.banks.length === 0){
+    state.banks.push({id:'bank_cash', name:'Cash', openingBalance:0, notes:''});
+  }
+  await persist();
+  setUnexportedFlag(false);
+  markBackupSaved();
+  renderHeaderActions();
+  renderAll();
+}
+
+/* ---- Load encrypted data from the hosted file, unlocked by a passphrase ----
+   The hosted file is AES-256-GCM ciphertext; unreadable without the passphrase.
+   Everything below runs on this device — the passphrase never leaves it. */
+const b64ToBytes = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+
+async function loadEncryptedData(){
+  const passEl = document.getElementById('loadPassInput');
+  const statusEl = document.getElementById('loadDataStatus');
+  const setStatus = (msg, kind) => { if(statusEl){ statusEl.textContent = msg; statusEl.className = 'field-note' + (kind ? ' ' + kind : ''); } };
+  const pass = (passEl?.value || '').trim();
+  if(!pass){ setStatus('Enter your passphrase first.', 'warn'); return; }
+  if(!(window.crypto && crypto.subtle)){
+    setStatus('This browser can’t unlock encrypted data. Open the app in Chrome.', 'warn'); return;
+  }
+  setStatus('Unlocking…', '');
+  let blob;
+  try{
+    const res = await fetch('data.enc.json?ts=' + Date.now());   // network-fresh
+    if(!res.ok) throw new Error('http ' + res.status);
+    blob = await res.json();
+  }catch(e){
+    setStatus('Couldn’t reach the data file. Check the internet and try again.', 'warn'); return;
+  }
+  let plainText;
+  try{
+    const salt = b64ToBytes(blob.salt), iv = b64ToBytes(blob.iv), ct = b64ToBytes(blob.ct);
+    const km = await crypto.subtle.importKey('raw', new TextEncoder().encode(pass), 'PBKDF2', false, ['deriveKey']);
+    const key = await crypto.subtle.deriveKey(
+      { name:'PBKDF2', salt, iterations: blob.iter || 310000, hash:'SHA-256' },
+      km, { name:'AES-GCM', length:256 }, false, ['decrypt']);
+    const buf = await crypto.subtle.decrypt({ name:'AES-GCM', iv }, key, ct);
+    plainText = new TextDecoder().decode(buf);
+  }catch(e){
+    /* AES-GCM authentication fails on a wrong passphrase — nothing decrypts. */
+    setStatus('That passphrase didn’t work. Please check it and try again.', 'warn'); return;
+  }
+  let parsed;
+  try{ parsed = JSON.parse(plainText); }catch(e){ setStatus('The data file looks corrupted.', 'warn'); return; }
+  const incoming = parsed && parsed.data ? parsed.data : parsed;
+  const nSales = (incoming.sales||[]).length, nCust = (incoming.customers||[]).length, nItems = (incoming.items||[]).length;
+  if(!confirm(`This will REPLACE everything on this phone with the loaded data:\n\n• ${nItems} items\n• ${nSales} sales\n• ${nCust} customers\n\nAny sales recorded on this phone that haven’t been sent to the computer will be lost. Continue?`)){
+    setStatus('Cancelled — nothing changed.', ''); return;
+  }
+  await applyBackupData(incoming);
+  if(passEl) passEl.value = '';
+  setStatus(`Loaded — ${nCust} customers and ${nSales} sales are now on this phone.`, 'ok');
+}
+
 function handleImportDataFile(evt){
   const file = evt.target.files[0];
   if(!file) return;
@@ -2962,30 +3053,7 @@ function handleImportDataFile(evt){
 
 Continue?`;
     if(!confirm(summary)){ evt.target.value = ''; return; }
-
-    state.items = incoming.items || [];
-    state.purchases = incoming.purchases || [];
-    state.sales = incoming.sales || [];
-    state.purchaseReturns = incoming.purchaseReturns || [];
-    state.salesReturns = incoming.salesReturns || [];
-    state.banks = incoming.banks || [];
-    state.payments = incoming.payments || [];
-    state.credits = incoming.credits || [];
-    state.accounts = incoming.accounts || [];
-    state.transactions = incoming.transactions || [];
-    state.loans = incoming.loans || [];
-    state.customers = incoming.customers || [];
-    state.settings = Object.assign({ showAdvanced:false }, incoming.settings || {});
-    backfillCustomersFromSales();
-    applyAdvancedVisibility();
-    if(state.banks.length === 0){
-      state.banks.push({id:'bank_cash', name:'Cash', openingBalance:0, notes:''});
-    }
-    await persist();
-    setUnexportedFlag(false);
-    markBackupSaved();
-    renderHeaderActions();
-    renderAll();
+    await applyBackupData(incoming);
     evt.target.value = '';
     alert('Backup restored successfully.');
   };
