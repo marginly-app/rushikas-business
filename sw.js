@@ -1,9 +1,16 @@
 /* Service worker for "Rushika's Business".
-   Caches the app so it opens instantly and works with NO internet after the
-   first visit. It only ever caches the app's own files — it never touches or
-   transmits the business data, which lives in the browser's local storage on
-   this device. Bump CACHE_NAME whenever you deploy a new index.html. */
-const CACHE_NAME = 'rushika-app-v11';
+   The app opens instantly and works with NO internet after the first visit.
+   It only ever caches the app's own files — it never touches or transmits the
+   business data, which lives in the browser's local storage on this device.
+
+   Strategy:
+   - The app page (index.html) is NETWORK-FIRST: when online, she always gets
+     the newest version; when offline, it falls back to the cached copy. This is
+     what makes edits actually show up instead of getting stuck on an old cache.
+   - Icons/manifest are cache-first (they rarely change and load instantly).
+
+   Bump CACHE_NAME whenever you deploy a new index.html. */
+const CACHE_NAME = 'rushika-app-v12';
 const ASSETS = [
   './',
   './index.html',
@@ -27,25 +34,43 @@ self.addEventListener('activate', (event) => {
   );
 });
 
+function cachePut(req, res) {
+  if (res && res.ok && new URL(req.url).origin === self.location.origin) {
+    const copy = res.clone();
+    caches.open(CACHE_NAME).then((cache) => cache.put(req, copy));
+  }
+  return res;
+}
+
+// Network-first with a short timeout so a flaky connection can't hang the app.
+function networkFirst(req) {
+  return new Promise((resolve) => {
+    let settled = false;
+    const done = (r) => { if (!settled) { settled = true; resolve(r); } };
+    const timer = setTimeout(() => {
+      caches.match(req).then((c) => done(c || caches.match('./index.html')));
+    }, 3500);
+    fetch(req)
+      .then((res) => { clearTimeout(timer); done(cachePut(req, res)); })
+      .catch(() => {
+        clearTimeout(timer);
+        caches.match(req).then((c) => done(c || caches.match('./index.html')));
+      });
+  });
+}
+
+function cacheFirst(req) {
+  return caches.match(req).then((cached) =>
+    cached || fetch(req).then((res) => cachePut(req, res)).catch(() => undefined)
+  );
+}
+
 self.addEventListener('fetch', (event) => {
   const req = event.request;
   if (req.method !== 'GET') return;
-  event.respondWith(
-    caches.match(req).then((cached) => {
-      if (cached) return cached;
-      return fetch(req)
-        .then((res) => {
-          // Cache same-origin responses as we see them, so updates stick.
-          if (res && res.ok && new URL(req.url).origin === self.location.origin) {
-            const copy = res.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(req, copy));
-          }
-          return res;
-        })
-        .catch(() =>
-          // Offline and not cached: fall back to the app shell for page loads.
-          req.mode === 'navigate' ? caches.match('./index.html') : undefined
-        );
-    })
-  );
+  const url = new URL(req.url);
+  const isDoc = req.mode === 'navigate'
+    || (url.origin === self.location.origin
+        && (url.pathname.endsWith('/') || url.pathname.endsWith('/index.html')));
+  event.respondWith(isDoc ? networkFirst(req) : cacheFirst(req));
 });
