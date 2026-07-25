@@ -3767,6 +3767,10 @@ function showTab(name){
   document.querySelector('.tab-btn[data-tab="'+name+'"]').classList.add('active');
   const info = PAGE_INFO[name] || [name, ''];
   setPageHeading(info[0], info[1]);
+  /* Settings is trimmed on the phone, so its subtitle is too. */
+  if(name === 'settings' && typeof deviceRole === 'function' && deviceRole() === 'phone'){
+    setPageHeading('Settings', 'Save a backup, send your sales to the computer, and load your data.');
+  }
   renderHeaderActions(name);
   renderAll();
   if(name === 'settings') renderSettings();
