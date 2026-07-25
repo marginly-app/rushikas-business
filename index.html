@@ -361,7 +361,145 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
   .app.capture #navsec-shop .tab-btn[data-tab="reports"],
   /* Money/accountant views live on the laptop, not the selling phone. */
   .app.capture #navsec-in .tab-btn[data-tab="receivables"],
-  .app.capture #tab-overview .ov-grid{display:none;}
+  .app.capture #tab-overview .ov-grid,
+  .app.capture #tab-overview #ovStats{display:none;}
+
+  /* ---- Phone bottom navigation (capture mode only) ---- */
+  .phone-nav{display:none;}
+  .app.capture .phone-nav{
+    display:flex;position:fixed;left:0;right:0;bottom:0;z-index:40;
+    background:var(--surface);border-top:1px solid var(--line-strong);
+    padding:6px 4px calc(6px + env(safe-area-inset-bottom,0px));
+  }
+  .app.capture .main{padding-bottom:82px;}
+  .pn-btn{
+    flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;
+    background:none;border:none;cursor:pointer;padding:7px 4px;border-radius:12px;
+    color:var(--text-faint);font-family:var(--font-ui);font-size:11.5px;font-weight:600;
+  }
+  .pn-btn .pn-ico{font-size:21px;line-height:1;}
+  .pn-btn.active{color:var(--garnet-bright);}
+  .pn-btn.active .pn-ico{transform:translateY(-1px);}
+
+  /* ---- Sell screen: welcome hero + actions + mini assistant ---- */
+  .phone-home{display:none;}
+  .app.capture #phoneHome{display:flex;flex-direction:column;gap:16px;}
+  .app.capture .main{padding-top:14px;}
+
+  .home-hero{
+    position:relative;overflow:hidden;border-radius:22px;padding:28px 24px;
+    background:
+      radial-gradient(120% 150% at 100% 0%, rgba(167,139,250,0.30), transparent 60%),
+      radial-gradient(120% 150% at 0% 100%, rgba(196,181,253,0.15), transparent 55%),
+      var(--surface);
+    border:1px solid var(--line-strong);
+    animation:homeRise .55s cubic-bezier(.2,.7,.2,1) both;
+  }
+  .home-hero::after{
+    content:"";position:absolute;top:-45%;right:-15%;width:55%;height:190%;pointer-events:none;
+    background:radial-gradient(closest-side, rgba(167,139,250,0.24), transparent);
+    animation:heroDrift 9s ease-in-out infinite alternate;
+  }
+  .hh-greet{font-size:14px;color:var(--text-dim);letter-spacing:.3px;position:relative;}
+  .hh-name{
+    font-family:var(--font-display);font-size:40px;font-weight:700;line-height:1.04;margin:3px 0 9px;position:relative;
+    background:linear-gradient(90deg,var(--garnet-bright),#EADFFF,var(--garnet-bright));
+    background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;
+    animation:heroSheen 6.5s linear infinite;
+  }
+  .hh-sub{font-size:14.5px;color:var(--text-dim);position:relative;}
+
+  .home-actions{display:flex;gap:12px;animation:homeRise .55s cubic-bezier(.2,.7,.2,1) .07s both;}
+  .home-tile{
+    flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;
+    min-height:120px;padding:18px;border-radius:18px;cursor:pointer;text-align:center;
+    background:var(--surface);border:1px solid var(--line-strong);color:var(--text);
+    font-family:var(--font-ui);transition:transform .12s ease,border-color .13s ease;
+  }
+  .home-tile:active{transform:scale(.97);}
+  .home-tile.primary{flex:1.45;background:linear-gradient(150deg,var(--garnet-bright),var(--garnet));border-color:var(--garnet);color:var(--on-accent);}
+  .home-tile.primary .ht-label{color:var(--on-accent);}
+  .home-tile .ht-ico{font-size:30px;line-height:1;}
+  .home-tile .ht-label{font-size:16px;font-weight:600;letter-spacing:.2px;}
+
+  .home-chat{
+    border:1px solid var(--line-strong);border-radius:18px;background:var(--surface);padding:15px;
+    animation:homeRise .55s cubic-bezier(.2,.7,.2,1) .14s both;
+  }
+  .hc-title{font-size:12px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.6px;margin-bottom:9px;}
+  .hc-answer{font-size:14px;color:var(--text);line-height:1.55;}
+  .hc-answer p{margin:0 0 6px;} .hc-answer strong{color:var(--garnet-bright);}
+  .hc-chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:11px;}
+  .hc-chip{
+    padding:7px 12px;border-radius:999px;border:1px solid var(--line-strong);background:var(--paper);
+    color:var(--text-dim);font-size:12.5px;cursor:pointer;font-family:var(--font-ui);
+  }
+  .hc-chip:active{border-color:var(--garnet);color:var(--garnet-bright);}
+  .hc-input{display:flex;gap:8px;margin-top:13px;}
+  .hc-input input{
+    flex:1;min-width:0;background:var(--paper);border:1px solid var(--line-strong);color:var(--text);
+    padding:12px 13px;border-radius:12px;font-size:15px;font-family:var(--font-ui);
+  }
+  .hc-input input:focus{outline:none;border-color:var(--garnet);}
+  .hc-input button{
+    padding:0 20px;border-radius:12px;border:none;cursor:pointer;font-weight:700;font-family:var(--font-ui);
+    background:var(--garnet);color:var(--on-accent);font-size:14px;
+  }
+  @keyframes homeRise{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:none;}}
+  @keyframes heroSheen{to{background-position:200% 0;}}
+  @keyframes heroDrift{from{transform:translateY(-7%) scale(1);}to{transform:translateY(7%) scale(1.12);}}
+  @media (prefers-reduced-motion: reduce){
+    .home-hero,.home-actions,.home-chat,.hh-name,.home-hero::after{animation:none;}
+  }
+
+  /* ---- Phone customers: clean Name + Balance cards + toggle ---- */
+  .cust-phone-head,.cust-phone-list,.cust-phone-profile{display:none;}
+  .app.capture #tab-customers .cust-phone-head{display:flex;flex-direction:column;gap:10px;margin-bottom:12px;}
+  .app.capture #custPhoneList{display:flex;flex-direction:column;gap:10px;}
+  .app.capture #tab-customers #custStats,
+  .app.capture #tab-customers .controls,
+  .app.capture #tab-customers .table-wrap,
+  .app.capture #tab-customers .section-head,
+  .app.capture #tab-customers .section-sub,
+  .app.capture #tab-customers #setOffToggle,
+  .app.capture #tab-customer .stats,
+  .app.capture #tab-customer .table-wrap{display:none;}
+  .app.capture #tab-customer .cust-phone-profile{display:block;}
+  #custPhoneSearch{
+    width:100%;background:var(--surface);border:1px solid var(--line-strong);color:var(--text);
+    padding:11px 13px;border-radius:var(--radius-sm);font-size:15px;font-family:var(--font-ui);
+  }
+  .balances-toggle{
+    display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:10px 14px;
+    border:1px solid var(--line-strong);background:var(--surface);color:var(--text-dim);
+    border-radius:999px;font-size:13.5px;font-weight:600;cursor:pointer;font-family:var(--font-ui);
+  }
+  .app.capture.bal-on .balances-toggle{border-color:var(--garnet);background:var(--garnet-soft);color:var(--garnet-bright);}
+  .balances-toggle .bt-dot{width:9px;height:9px;border-radius:50%;background:var(--text-faint);transition:background .13s;}
+  .app.capture.bal-on .balances-toggle .bt-dot{background:var(--garnet-bright);}
+  .cust-card{
+    display:flex;align-items:center;justify-content:space-between;gap:12px;
+    padding:15px 16px;border-radius:14px;background:var(--surface);
+    border:1px solid var(--line-strong);cursor:pointer;
+  }
+  .cust-card:active{transform:scale(.99);}
+  .cust-card .cc-name{font-size:15.5px;font-weight:600;color:var(--text);}
+  .cust-card .cc-phone{font-size:13px;color:var(--text-faint);margin-top:2px;}
+  .cust-card .cc-bal{font-size:15px;font-weight:700;font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap;display:none;}
+  .app.capture.bal-on .cust-card .cc-bal{display:block;}
+  .cust-card .cc-bal.owes{color:var(--alert);}
+  .cust-card .cc-bal.clear{color:var(--sage);}
+  /* Balance on a customer profile — only when the toggle is on. */
+  .cust-bal-stat,.bal-num{display:none;}
+  .app.capture.bal-on .cust-bal-stat{display:block;}
+  .app.capture.bal-on .bal-num{display:inline;}
+  .pp-sub{font-size:13px;font-weight:600;color:var(--text-dim);margin:20px 0 10px;text-transform:uppercase;letter-spacing:.4px;}
+  .pp-inv{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 15px;border-radius:12px;background:var(--surface);border:1px solid var(--line-strong);margin-bottom:8px;}
+  .pp-inv-t{font-size:14.5px;font-weight:600;color:var(--text);}
+  .pp-inv-d{font-size:12.5px;color:var(--text-faint);margin-top:2px;}
+  .pp-inv-a{font-size:14.5px;font-weight:600;font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap;}
+  .pp-owe{display:block;font-size:12px;font-weight:600;color:var(--alert);}
+  .app.capture:not(.bal-on) .pp-owe{display:none;}   /* hide "due" when balances are off */
 
   .role-picker{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;}
   .role-btn{
@@ -1089,6 +1227,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
 
   <!-- OVERVIEW TAB -->
   <div class="tab-pane" id="tab-overview">
+    <div class="phone-home" id="phoneHome"></div>
     <div class="stats" id="ovStats"></div>
     <div class="ov-grid">
       <div class="panel">
@@ -1257,6 +1396,13 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
 
   <!-- CUSTOMERS TAB -->
   <div class="tab-pane" id="tab-customers" style="display:none;">
+    <div class="cust-phone-head">
+      <input type="search" id="custPhoneSearch" placeholder="Search customers…" oninput="renderCustomersPhone()">
+      <button class="balances-toggle" onclick="toggleBalances()">
+        <span class="bt-dot"></span><span id="balToggleLabel">Balances: on</span>
+      </button>
+    </div>
+    <div class="cust-phone-list" id="custPhoneList"></div>
     <div class="stats" id="custStats"></div>
     <div class="controls">
       <input type="text" class="search" id="custSearch" placeholder="Search by customer name…" oninput="renderCustomers()">
@@ -1304,6 +1450,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
         <button class="add-btn" onclick="newSaleForCurrentCustomer()">+ Record Sale</button>
       </div>
     </div>
+    <div class="cust-phone-profile" id="custPhoneProfile"></div>
     <div class="stats" id="custPageStats"></div>
     <div class="table-wrap">
       <table>
@@ -1540,6 +1687,32 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
     </div>
   </div>
   </main>
+
+  <!-- PHONE BOTTOM NAV (capture mode only) -->
+  <nav class="phone-nav" id="phoneNav" aria-label="Main">
+    <button class="pn-btn" data-pn="overview" onclick="showTab('overview')"><span class="pn-ico" aria-hidden="true">&#128179;</span><span>Sell</span></button>
+    <button class="pn-btn" data-pn="inventory" onclick="showTab('inventory')"><span class="pn-ico" aria-hidden="true">&#128142;</span><span>Inventory</span></button>
+    <button class="pn-btn" data-pn="customers" onclick="showTab('customers')"><span class="pn-ico" aria-hidden="true">&#128101;</span><span>Customers</span></button>
+  </nav>
+</div>
+
+<!-- ADD CUSTOMER MODAL (phone) -->
+<div class="overlay" id="customerOverlay">
+  <div class="modal">
+    <h2>Add Customer</h2>
+    <div class="field-row">
+      <div class="field"><label>First Name <span class="req">*</span></label><input type="text" id="mFirst" placeholder="Jane"></div>
+      <div class="field"><label>Last Name <span class="req">*</span></label><input type="text" id="mLast" placeholder="Doe"></div>
+    </div>
+    <div class="field"><label>Phone Number <span class="req">*</span></label><input type="tel" id="mPhone" placeholder="(555) 123-4567"></div>
+    <div class="field"><label>Address <span style="color:var(--text-faint);">(optional)</span></label><input type="text" id="mAddress" placeholder="123 Main St"></div>
+    <div class="field"><label>Notes <span style="color:var(--text-faint);">(optional)</span></label><input type="text" id="mNotes" placeholder="Prefers gold, birthday in May…"></div>
+    <div class="field-error" id="mCustError"></div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeOverlay('customerOverlay')">Cancel</button>
+      <button class="btn-primary" onclick="savePhoneCustomer()">Add Customer</button>
+    </div>
+  </div>
 </div>
 
 <!-- PARTY LEDGER MODAL -->
@@ -2550,6 +2723,7 @@ function deviceRole(){
 function setDeviceRole(role){
   try{ localStorage.setItem(DEVICE_KEY, role === 'phone' ? 'phone' : 'computer'); }catch(e){}
   applyDeviceRole();
+  renderAll();
   renderSettings();
 }
 function applyDeviceRole(){
@@ -3454,8 +3628,19 @@ function showTab(name){
   if(name === 'settings') renderSettings();
   if(name === 'assistant') brainOnOpen();
   syncNavSections(name, false);
+  syncPhoneNav(name);
   closeSidebarOnMobile();
   window.scrollTo(0,0);
+}
+
+/* Light up the matching item in the phone bottom nav (a customer profile
+   counts as being under "Customers"). */
+function syncPhoneNav(name){
+  const map = { overview:'overview', inventory:'inventory', customers:'customers', customer:'customers' };
+  const active = map[name] || null;
+  document.querySelectorAll('#phoneNav .pn-btn').forEach(b=>{
+    b.classList.toggle('active', b.dataset.pn === active);
+  });
 }
 
 /* Which collapsible bucket each tab lives in (standalone tabs aren't listed). */
@@ -3521,11 +3706,15 @@ function showCustomerTab(id){
   document.getElementById('tab-customer').style.display='block';
   document.getElementById('headerActions').innerHTML = '';
   const bal = customerBalance(customerFullName(cust));
-  setPageHeading(customerFullName(cust),
-    bal > 0 ? `Owes you ${fmt(bal)}.` : 'All settled up.');
+  const phone = (typeof deviceRole === 'function' && deviceRole() === 'phone');
+  const sub = (phone && !showBalances())
+    ? ''                                              // balances hidden on the phone
+    : (bal > 0 ? `Owes you ${fmt(bal)}.` : 'All settled up.');
+  setPageHeading(customerFullName(cust), sub);
   renderCustomerTabs();
   renderCustomerPage();
   syncNavSections(null, true);
+  syncPhoneNav('customer');
   closeSidebarOnMobile();
   window.scrollTo(0,0);
 }
@@ -3534,7 +3723,10 @@ function renderHeaderActions(activeTab){
   const tab = activeTab || (document.querySelector('.tab-btn[data-tab].active') ? document.querySelector('.tab-btn[data-tab].active').dataset.tab : 'inventory');
   const el = document.getElementById('headerActions');
   if(tab === 'overview'){
-    el.innerHTML = `<button class="btn-secondary" onclick="showTab('settings')">+ Add Customer</button>
+    /* On the phone the Sell tiles already cover these, so keep the header clean. */
+    el.innerHTML = (typeof deviceRole === 'function' && deviceRole() === 'phone')
+      ? ''
+      : `<button class="btn-secondary" onclick="showTab('settings')">+ Add Customer</button>
                      <button class="add-btn" onclick="openSaleModal()">+ Record Sale</button>`;
   } else if(tab === 'inventory'){
     el.innerHTML = `<button class="btn-secondary" onclick="openImportModal()">Import Excel</button>
@@ -3557,7 +3749,10 @@ function renderHeaderActions(activeTab){
                      <button class="btn-secondary" onclick="openBankModal()">+ Add Bank Account</button>
                      <button class="add-btn" onclick="openTxModal()">+ Add Transaction</button>`;
   } else if(tab === 'customers' || tab === 'vendors'){
-    el.innerHTML = `<button class="btn-secondary" onclick="autoApplyAllCredits()" title="Apply every unapplied credit to that party's oldest open invoice(s) first">⚡ Auto Apply All Credits to Oldest Invoices</button>`;
+    /* Credit-application is an accountant task — keep it off the phone. */
+    el.innerHTML = (tab === 'customers' && typeof deviceRole === 'function' && deviceRole() === 'phone')
+      ? ''
+      : `<button class="btn-secondary" onclick="autoApplyAllCredits()" title="Apply every unapplied credit to that party's oldest open invoice(s) first">⚡ Auto Apply All Credits to Oldest Invoices</button>`;
   } else if(tab === 'loans'){
     el.innerHTML = `<button class="btn-secondary" onclick="openLoanExpImportModal()">Import Excel</button>
                      <button class="add-btn" onclick="openLoanModal()">+ Add Loan</button>`;
@@ -6370,10 +6565,41 @@ function renderOverview(){
      no money figures, no "who owes me" — that's the laptop/accountant's view.
      Just the two counts she actually uses while out selling. */
   if(typeof deviceRole === 'function' && deviceRole() === 'phone'){
-    statsEl.innerHTML = `
-      <div class="stat"><div class="label">In stock</div><div class="value">${stockCount}</div></div>
-      <div class="stat"><div class="label">Customers</div><div class="value">${state.customers.length}</div></div>
-    `;
+    const home = document.getElementById('phoneHome');
+    if(home && !home.dataset.built){
+      /* Build once so typing in the chat isn't wiped by background re-renders. */
+      const hr = new Date().getHours();
+      const greet = hr < 12 ? 'Good morning,' : (hr < 17 ? 'Good afternoon,' : 'Good evening,');
+      home.innerHTML = `
+        <div class="home-hero">
+          <div class="hh-greet">${greet}</div>
+          <div class="hh-name">Rushika</div>
+          <div class="hh-sub">Welcome back — let's make today shine.</div>
+        </div>
+        <div class="home-actions">
+          <button class="home-tile primary" onclick="openSaleModal()">
+            <span class="ht-ico" aria-hidden="true">&#128179;</span><span class="ht-label">Record a Sale</span>
+          </button>
+          <button class="home-tile" onclick="openCustomerModal()">
+            <span class="ht-ico" aria-hidden="true">&#43;</span><span class="ht-label">Add a Customer</span>
+          </button>
+        </div>
+        <div class="home-chat">
+          <div class="hc-title">Ask me anything</div>
+          <div class="hc-answer" id="phoneAskAnswer"></div>
+          <div class="hc-chips" id="phoneAskChips"></div>
+          <div class="hc-input">
+            <input id="phoneAskInput" type="text" autocomplete="off" placeholder="e.g. who owes me money?"
+                   onkeydown="if(event.key==='Enter'){event.preventDefault();phoneAsk();}">
+            <button onclick="phoneAsk()">Ask</button>
+          </div>
+        </div>`;
+      home.dataset.built = '1';
+      renderPhoneAskDefault();
+    }
+    const pane = document.getElementById('tab-overview');
+    if(pane && pane.style.display !== 'none') setPageHeading('', '');
+    statsEl.innerHTML = '';
     const ow = document.getElementById('ovOwing'); if(ow) ow.innerHTML = '';
     const rc = document.getElementById('ovRecent'); if(rc) rc.innerHTML = '';
     return;
@@ -6422,6 +6648,108 @@ function renderOverview(){
         </div>`).join('');
 }
 
+/* ================= Phone (capture) UI ================= */
+
+/* Add Customer as a modal, so she never leaves the Sell screen. Reuses the
+   exact same validation and save path as the desktop form. */
+function openCustomerModal(){
+  ['mFirst','mLast','mPhone','mAddress','mNotes'].forEach(id=>{
+    const el = document.getElementById(id); if(el) el.value = '';
+  });
+  const e = document.getElementById('mCustError'); if(e) e.textContent = '';
+  document.getElementById('customerOverlay').classList.add('show');
+  setTimeout(()=>{ const f = document.getElementById('mFirst'); if(f) f.focus(); }, 60);
+}
+async function savePhoneCustomer(){
+  /* Funnel through the shared desktop fields + saveCustomer so there is only
+     ever one place that creates a customer. */
+  document.getElementById('cfEditId').value    = '';
+  document.getElementById('cfFirstName').value = document.getElementById('mFirst').value;
+  document.getElementById('cfLastName').value  = document.getElementById('mLast').value;
+  document.getElementById('cfPhone').value     = document.getElementById('mPhone').value;
+  document.getElementById('cfAddress').value   = document.getElementById('mAddress').value;
+  document.getElementById('cfNotes').value     = document.getElementById('mNotes').value;
+  await saveCustomer();
+  const problem = document.getElementById('cfError').textContent;
+  const mErr = document.getElementById('mCustError');
+  if(problem){ mErr.textContent = problem; return; }   // saveCustomer rejected it — show why
+  mErr.textContent = '';
+  closeOverlay('customerOverlay');
+}
+
+/* "Show balances" toggle — lets her hide who-owes-what with a glance-away tap. */
+const SHOW_BAL_KEY = 'rushika-show-balances';
+function showBalances(){
+  try{ return localStorage.getItem(SHOW_BAL_KEY) !== 'off'; }catch(e){ return true; }  // default on
+}
+function applyBalances(){
+  document.getElementById('app')?.classList.toggle('bal-on', showBalances());
+  const l = document.getElementById('balToggleLabel');
+  if(l) l.textContent = showBalances() ? 'Balances: on' : 'Balances: off';
+}
+function toggleBalances(){
+  try{ localStorage.setItem(SHOW_BAL_KEY, showBalances() ? 'off' : 'on'); }catch(e){}
+  applyBalances();
+  /* Re-open the current profile so its header balance updates live too. */
+  if(activeCustomerId) showCustomerTab(activeCustomerId);
+}
+
+/* Phone customers list — just name + balance, most-owed first. */
+function renderCustomersPhone(){
+  const list = document.getElementById('custPhoneList');
+  if(!list) return;
+  const q = (document.getElementById('custPhoneSearch')?.value || '').trim().toLowerCase();
+  let rows = state.customers.map(c=>{
+    const name = customerFullName(c);
+    return { id:c.id, name, phone:c.phone, bal:customerBalance(name) };
+  });
+  if(q) rows = rows.filter(r => r.name.toLowerCase().includes(q) || String(r.phone||'').toLowerCase().includes(q));
+  rows.sort((a,b)=> (b.bal - a.bal) || a.name.localeCompare(b.name));
+  if(rows.length === 0){
+    list.innerHTML = `<div class="panel-empty">${q ? 'No customers match.' : 'No customers yet — tap Sell to add one.'}</div>`;
+    return;
+  }
+  list.innerHTML = rows.map(r=>`
+    <div class="cust-card" onclick="showCustomerTab('${r.id}')">
+      <div>
+        <div class="cc-name">${escapeHtml(r.name)}</div>
+        <div class="cc-phone">${r.phone ? escapeHtml(formatPhone(r.phone)) : 'No phone on file'}</div>
+      </div>
+      <div class="cc-bal ${r.bal > 0 ? 'owes' : 'clear'}">${r.bal > 0 ? fmt(r.bal) : 'Paid up'}</div>
+    </div>`).join('');
+}
+
+/* Mini assistant on the Sell screen — reuses the same offline brain as the
+   full "Ask Me Anything" tab. Nothing leaves the phone. */
+function chipButtons(list){
+  return (list || []).slice(0, 3).map(c =>
+    `<button class="hc-chip" onclick='phoneAskChip(${JSON.stringify(c).replace(/'/g,"&apos;")})'>${escapeHtml(c)}</button>`
+  ).join('');
+}
+function renderPhoneAskDefault(){
+  const ans = document.getElementById('phoneAskAnswer');
+  const chips = document.getElementById('phoneAskChips');
+  if(ans) ans.innerHTML = `<p style="color:var(--text-dim);">Hi Rushika — ask me about your sales, stock, or who owes you.</p>`;
+  if(chips) chips.innerHTML = chipButtons(["What did I sell today?", "Who owes me money?", "What's running low?"]);
+}
+function phoneAsk(){
+  const inp = document.getElementById('phoneAskInput');
+  const ans = document.getElementById('phoneAskAnswer');
+  const chips = document.getElementById('phoneAskChips');
+  if(!inp || !ans) return;
+  const q = inp.value.trim();
+  if(!q) return;
+  const res = brainAnswer(q);          // offline, on-device
+  ans.innerHTML = res.html;
+  if(chips) chips.innerHTML = chipButtons(res.chips);
+  inp.value = '';
+}
+function phoneAskChip(q){
+  const inp = document.getElementById('phoneAskInput');
+  if(inp) inp.value = q;
+  phoneAsk();
+}
+
 function toggleSidebar(){
   const sb = document.getElementById('sidebar');
   const open = sb.classList.toggle('open');
@@ -6463,6 +6791,35 @@ function renderCustomerPage(){
     <div class="stat ${owed>0?'warn':'good'}"><div class="label">${owed>0?'Owes Me':'Balance'}</div><div class="value">${fmt(owed)}</div></div>
     <div class="stat"><div class="label">Last Sale</div><div class="value" style="font-size:20px;">${lastDate || '—'}</div></div>
   `;
+
+  /* Phone profile: name + contact are already in the header; here just the
+     balance (shown only when the toggle is on) and her last 3 invoices. */
+  const ppEl = document.getElementById('custPhoneProfile');
+  if(ppEl){
+    const ppGroups = groupByInvoice(sales, 'invoiceNo', 'customer').map(g=>({
+      invoiceNo: g.invoiceNo,
+      date:    g.items.reduce((d,x)=> x.date > d ? x.date : d, ''),
+      pieces:  g.items.reduce((s,x)=>s+(Number(x.qty)||0), 0),
+      total:   g.items.reduce((s,x)=>s+(Number(x.total)||0), 0),
+      balance: g.items.reduce((s,x)=>s+(Number(x.balance)||0), 0)
+    })).sort((a,b)=> String(b.date).localeCompare(String(a.date)));
+    const last3 = ppGroups.slice(0, 3);
+    ppEl.innerHTML = `
+      <div class="cust-bal-stat stat ${owed>0?'warn':'good'}">
+        <div class="label">${owed>0?'Owes me':'All paid up'}</div>
+        <div class="value">${fmt(owed)}</div>
+      </div>
+      <div class="pp-sub">${last3.length ? ('Last ' + (last3.length===1 ? 'invoice' : last3.length + ' invoices')) : 'Purchases'}</div>
+      ${last3.length ? last3.map(g=>`
+        <div class="pp-inv">
+          <div>
+            <div class="pp-inv-t">${g.invoiceNo ? ('Invoice ' + escapeHtml(g.invoiceNo)) : 'No invoice no.'}</div>
+            <div class="pp-inv-d">${g.date || '—'} &middot; ${g.pieces} piece${g.pieces===1?'':'s'}</div>
+          </div>
+          <div class="pp-inv-a">${fmt(g.total)}${g.balance>0?`<span class="pp-owe">${fmt(g.balance)} due</span>`:''}</div>
+        </div>`).join('') : `<div class="panel-empty">No sales yet.</div>`}
+    `;
+  }
 
   const body = document.getElementById('custPageBody');
   if(sales.length === 0){
@@ -6635,6 +6992,7 @@ function vendorSummaries(fromId, toId){
 }
 
 function renderCustomers(){
+  renderCustomersPhone();   // the phone card list is built independently of the desktop table
   let summaries = customerSummaries('custDateFrom', 'custDateTo');
   /* Registered customers with no sales yet still belong in the list. */
   state.customers.forEach(c=>{
@@ -8892,6 +9250,8 @@ function labelTableCells(scope){
 setPageHeading(PAGE_INFO.overview[0], PAGE_INFO.overview[1]);
 initRail();
 applyDeviceRole();
+applyBalances();
+syncPhoneNav('overview');
 requestPersistentStorage();
 loadState();
 </script>
