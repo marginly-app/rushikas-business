@@ -365,12 +365,40 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
   .app.capture #tab-overview .ov-grid,
   .app.capture #tab-overview #ovStats{display:none;}
 
-  /* ---- Sell tab: just the two actions on the phone ---- */
+  /* ---- Sell tab: action tile + New Sale / Sales Returns switch ---- */
   .sell-phone{display:none;}
-  .app.capture #tab-sales .sell-phone{display:flex;flex-direction:column;gap:12px;margin-bottom:6px;}
+  .sell-tabs{display:none;}
+  .app.capture #tab-sales .sell-phone,
+  .app.capture #tab-sales-returns .sell-phone{display:flex;flex-direction:column;gap:12px;margin-bottom:6px;}
   .app.capture #tab-sales #saleStats,
   .app.capture #tab-sales .controls,
-  .app.capture #tab-sales .table-wrap{display:none;}
+  .app.capture #tab-sales .table-wrap,
+  .app.capture #tab-sales-returns #saleReturnStats,
+  .app.capture #tab-sales-returns .controls,
+  .app.capture #tab-sales-returns .table-wrap{display:none;}
+  .app.capture .sell-tabs{
+    display:flex;gap:6px;background:var(--surface);border:1px solid var(--line-strong);
+    border-radius:14px;padding:4px;margin-bottom:14px;
+  }
+  .sell-tab{
+    flex:1;padding:10px 8px;border:none;background:none;border-radius:10px;cursor:pointer;
+    font-family:var(--font-ui);font-size:14px;font-weight:600;color:var(--text-dim);
+  }
+  .sell-tab.active{background:var(--garnet);color:var(--on-accent);}
+
+  /* ---- + Add Customer on the Customers tab ---- */
+  .add-cust-btn{
+    display:block;width:100%;padding:13px;border-radius:14px;cursor:pointer;
+    background:var(--garnet);color:var(--on-accent);border:1px solid var(--garnet);
+    font-family:var(--font-ui);font-size:15px;font-weight:600;
+  }
+  .add-cust-btn:active{transform:scale(.99);}
+
+  /* ---- Trim Settings on the phone to the essentials ---- */
+  .app.capture #settingsCustForm,
+  .app.capture #settingsCustList,
+  .app.capture #restoreBackupBtn,
+  .app.capture #loadSetupBtn{display:none;}
 
   /* ---- Top bar becomes "Home"; a gear reaches settings/send ---- */
   .phone-menu-btn{display:none;}
@@ -1326,12 +1354,13 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
 
   <!-- SALES TAB -->
   <div class="tab-pane" id="tab-sales" style="display:none;">
+    <div class="sell-tabs">
+      <button class="sell-tab" data-st="sales" onclick="showTab('sales')">New Sale</button>
+      <button class="sell-tab" data-st="sales-returns" onclick="showTab('sales-returns')">Sales Returns</button>
+    </div>
     <div class="sell-phone" id="sellPhone">
       <button class="home-tile primary" onclick="openSaleModal()">
         <span class="ht-ico" aria-hidden="true">&#128179;</span><span class="ht-label">Record a Sale</span>
-      </button>
-      <button class="home-tile" onclick="openCustomerModal()">
-        <span class="ht-ico" aria-hidden="true">&#43;</span><span class="ht-label">Add a Customer</span>
       </button>
     </div>
     <div class="stats" id="saleStats"></div>
@@ -1374,6 +1403,15 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
 
   <!-- SALES RETURNS TAB -->
   <div class="tab-pane" id="tab-sales-returns" style="display:none;">
+    <div class="sell-tabs">
+      <button class="sell-tab" data-st="sales" onclick="showTab('sales')">New Sale</button>
+      <button class="sell-tab" data-st="sales-returns" onclick="showTab('sales-returns')">Sales Returns</button>
+    </div>
+    <div class="sell-phone" id="returnPhone">
+      <button class="home-tile primary" onclick="openSalesReturnModal()">
+        <span class="ht-ico" aria-hidden="true">&#8630;</span><span class="ht-label">Record a Return</span>
+      </button>
+    </div>
     <div class="stats" id="saleReturnStats"></div>
     <div class="controls">
       <input type="text" class="search" id="saleReturnSearch" placeholder="Search by customer or item…" oninput="renderSalesReturns()">
@@ -1426,6 +1464,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
   <!-- CUSTOMERS TAB -->
   <div class="tab-pane" id="tab-customers" style="display:none;">
     <div class="cust-phone-head">
+      <button class="add-cust-btn" onclick="openCustomerModal()">＋ Add Customer</button>
       <input type="search" id="custPhoneSearch" placeholder="Search customers…" oninput="renderCustomersPhone()">
       <button class="balances-toggle" onclick="toggleBalances()">
         <span class="bt-dot"></span><span id="balToggleLabel">Balances: on</span>
@@ -1494,7 +1533,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
   <!-- SETTINGS TAB -->
   <div class="tab-pane" id="tab-settings" style="display:none;">
 
-    <div class="settings-section">
+    <div class="settings-section" id="settingsCustForm">
       <h3 id="custFormTitle">Add a New Customer</h3>
       <p class="hint">First name, last name and phone number are required. Address is optional.</p>
       <input type="hidden" id="cfEditId" value="">
@@ -1519,7 +1558,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
       </div>
     </div>
 
-    <div class="settings-section">
+    <div class="settings-section" id="settingsCustList">
       <h3>Your Customers</h3>
       <p class="hint">Each customer here gets their own tab at the top of the screen.</p>
       <div class="table-wrap">
@@ -1536,7 +1575,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
         Export a backup file now and then, and keep it somewhere safe.</p>
       <div style="display:flex;gap:10px;flex-wrap:wrap;">
         <button class="btn-primary" onclick="exportData()">⬇ Export Backup File</button>
-        <button class="btn-secondary" onclick="document.getElementById('importDataFile').click()">⬆ Restore From Backup</button>
+        <button class="btn-secondary" id="restoreBackupBtn" onclick="document.getElementById('importDataFile').click()">⬆ Restore From Backup</button>
       </div>
     </div>
 
@@ -1569,7 +1608,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
           send them over and pick <strong>Save to Drive</strong> (or email) so the computer can pick them up.</p>
         <div style="display:flex;gap:10px;flex-wrap:wrap;">
           <button class="btn-primary" onclick="sendSalesToComputer()">⬆ Send my sales to the computer</button>
-          <button class="btn-secondary" onclick="document.getElementById('phoneSetupFile').click()">⬇ Load setup from computer</button>
+          <button class="btn-secondary" id="loadSetupBtn" onclick="document.getElementById('phoneSetupFile').click()">⬇ Load setup from computer</button>
         </div>
         <input type="file" id="phoneSetupFile" accept=".json,application/json" style="display:none;" onchange="handleMergeFile(event)">
         <p class="hint" style="margin-top:10px;">Loading a setup file only <strong>adds</strong> stock and customer
@@ -3734,6 +3773,7 @@ function showTab(name){
   if(name === 'assistant') brainOnOpen();
   syncNavSections(name, false);
   syncPhoneNav(name);
+  document.querySelectorAll('.sell-tab').forEach(b=>b.classList.toggle('active', b.dataset.st === name));
   closeSidebarOnMobile();
   window.scrollTo(0,0);
 }
@@ -3741,7 +3781,7 @@ function showTab(name){
 /* Light up the matching item in the phone bottom nav (a customer profile
    counts as being under "Customers"). */
 function syncPhoneNav(name){
-  const map = { sales:'sales', inventory:'inventory', customers:'customers', customer:'customers' };
+  const map = { sales:'sales', 'sales-returns':'sales', inventory:'inventory', customers:'customers', customer:'customers' };
   const active = map[name] || null;
   document.querySelectorAll('#phoneNav .pn-btn').forEach(b=>{
     b.classList.toggle('active', b.dataset.pn === active);
@@ -3848,7 +3888,9 @@ function renderHeaderActions(activeTab){
     el.innerHTML = `<button class="btn-secondary" onclick="openPurchaseReturnImportModal()">Import Excel</button>
                      <button class="add-btn" onclick="openPurchaseReturnModal()">+ Record Return</button>`;
   } else if(tab === 'sales-returns'){
-    el.innerHTML = `<button class="btn-secondary" onclick="openSalesReturnImportModal()">Import Excel</button>
+    el.innerHTML = (typeof deviceRole === 'function' && deviceRole() === 'phone')
+      ? ''    /* the Returns tile covers this on the phone */
+      : `<button class="btn-secondary" onclick="openSalesReturnImportModal()">Import Excel</button>
                      <button class="add-btn" onclick="openSalesReturnModal()">+ Record Return</button>`;
   } else if(tab === 'banks'){
     el.innerHTML = `<button class="btn-secondary" onclick="openBankStatementModal()">Export Statement</button>
