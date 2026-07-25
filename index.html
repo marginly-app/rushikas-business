@@ -354,8 +354,9 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
   /* Hide everything that belongs on the computer, so the phone is only a pad
      for recording sales while she's out. */
   .send-to-computer{display:none;width:100%;margin-bottom:8px;}
-  .app.capture .send-to-computer{display:block;}
   .app.rail .send-to-computer{display:none;}
+  /* Capture wins even when the desktop rail class is also present (phones have both). */
+  .app.capture .send-to-computer{display:block;}
   .app.capture #navsec-out,
   .app.capture .nav-main>.tab-btn[data-tab="banks"],
   .app.capture #navsec-shop .tab-btn[data-tab="reports"],
@@ -363,6 +364,21 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
   .app.capture #navsec-in .tab-btn[data-tab="receivables"],
   .app.capture #tab-overview .ov-grid,
   .app.capture #tab-overview #ovStats{display:none;}
+
+  /* ---- Sell tab: just the two actions on the phone ---- */
+  .sell-phone{display:none;}
+  .app.capture #tab-sales .sell-phone{display:flex;flex-direction:column;gap:12px;margin-bottom:6px;}
+  .app.capture #tab-sales #saleStats,
+  .app.capture #tab-sales .controls,
+  .app.capture #tab-sales .table-wrap{display:none;}
+
+  /* ---- Top bar becomes "Home"; a gear reaches settings/send ---- */
+  .phone-menu-btn{display:none;}
+  .app.capture .phone-menu-btn{
+    display:flex;align-items:center;justify-content:center;position:fixed;top:0;right:0;z-index:41;
+    height:50px;min-width:52px;background:transparent;border:none;color:#fff;font-size:20px;cursor:pointer;
+    padding-right:max(16px, env(safe-area-inset-right));
+  }
 
   /* ---- Phone bottom navigation (capture mode only) ---- */
   .phone-nav{display:none;}
@@ -1124,8 +1140,11 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
 <body>
 <div class="app" id="app">
 
-  <button class="nav-toggle" onclick="toggleSidebar()" aria-expanded="false" aria-controls="sidebar">
+  <button class="nav-toggle" onclick="topBarTap()" aria-expanded="false" aria-controls="sidebar">
     <span aria-hidden="true">&#9776;</span> Menu
+  </button>
+  <button class="phone-menu-btn" onclick="toggleSidebar()" aria-label="Settings and menu">
+    <span aria-hidden="true">&#9881;</span>
   </button>
 
   <aside class="sidebar" id="sidebar">
@@ -1305,6 +1324,14 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
 
   <!-- SALES TAB -->
   <div class="tab-pane" id="tab-sales" style="display:none;">
+    <div class="sell-phone" id="sellPhone">
+      <button class="home-tile primary" onclick="openSaleModal()">
+        <span class="ht-ico" aria-hidden="true">&#128179;</span><span class="ht-label">Record a Sale</span>
+      </button>
+      <button class="home-tile" onclick="openCustomerModal()">
+        <span class="ht-ico" aria-hidden="true">&#43;</span><span class="ht-label">Add a Customer</span>
+      </button>
+    </div>
     <div class="stats" id="saleStats"></div>
     <div class="controls">
       <input type="text" class="search" id="saleSearch" placeholder="Search by customer, invoice #, or item…" oninput="renderSales()">
@@ -1690,7 +1717,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
 
   <!-- PHONE BOTTOM NAV (capture mode only) -->
   <nav class="phone-nav" id="phoneNav" aria-label="Main">
-    <button class="pn-btn" data-pn="overview" onclick="showTab('overview')"><span class="pn-ico" aria-hidden="true">&#128179;</span><span>Sell</span></button>
+    <button class="pn-btn" data-pn="sales" onclick="showTab('sales')"><span class="pn-ico" aria-hidden="true">&#128179;</span><span>Sell</span></button>
     <button class="pn-btn" data-pn="inventory" onclick="showTab('inventory')"><span class="pn-ico" aria-hidden="true">&#128142;</span><span>Inventory</span></button>
     <button class="pn-btn" data-pn="customers" onclick="showTab('customers')"><span class="pn-ico" aria-hidden="true">&#128101;</span><span>Customers</span></button>
   </nav>
@@ -2729,12 +2756,22 @@ function setDeviceRole(role){
 function applyDeviceRole(){
   const isPhone = deviceRole() === 'phone';
   document.getElementById('app')?.classList.toggle('capture', isPhone);
+  /* On the phone the top bar is "Home"; on a small laptop it's the menu. */
+  const tb = document.querySelector('.nav-toggle');
+  if(tb) tb.innerHTML = isPhone
+    ? '<span aria-hidden="true">&#8962;</span> Home'
+    : '<span aria-hidden="true">&#9776;</span> Menu';
   if(isPhone){
     /* Don't strand her on a tab that capture mode hides. */
     const active = document.querySelector('.tab-btn[data-tab].active');
     const keep = ['overview','sales','sales-returns','inventory','customers','settings','assistant'];
     if(active && !keep.includes(active.dataset.tab)) showTab('sales');
   }
+}
+/* Top bar: go Home on the phone; open the menu on a small laptop. */
+function topBarTap(){
+  if(typeof deviceRole === 'function' && deviceRole() === 'phone') showTab('overview');
+  else toggleSidebar();
 }
 
 /* Collections that carry stable ids and can therefore be merged safely. */
@@ -3636,7 +3673,7 @@ function showTab(name){
 /* Light up the matching item in the phone bottom nav (a customer profile
    counts as being under "Customers"). */
 function syncPhoneNav(name){
-  const map = { overview:'overview', inventory:'inventory', customers:'customers', customer:'customers' };
+  const map = { sales:'sales', inventory:'inventory', customers:'customers', customer:'customers' };
   const active = map[name] || null;
   document.querySelectorAll('#phoneNav .pn-btn').forEach(b=>{
     b.classList.toggle('active', b.dataset.pn === active);
@@ -3735,7 +3772,9 @@ function renderHeaderActions(activeTab){
     el.innerHTML = `<button class="btn-secondary" onclick="openPurchaseImportModal()">Import Excel</button>
                      <button class="add-btn" onclick="openPurchaseModal()">+ Record Purchase</button>`;
   } else if(tab === 'sales'){
-    el.innerHTML = `<button class="btn-secondary" onclick="openSalesImportModal()">Import Excel</button>
+    el.innerHTML = (typeof deviceRole === 'function' && deviceRole() === 'phone')
+      ? ''    /* the Sell-tab tiles already cover this on the phone */
+      : `<button class="btn-secondary" onclick="openSalesImportModal()">Import Excel</button>
                      <button class="add-btn" onclick="openSaleModal()">+ Record Sale</button>`;
   } else if(tab === 'purchase-returns'){
     el.innerHTML = `<button class="btn-secondary" onclick="openPurchaseReturnImportModal()">Import Excel</button>
@@ -6574,15 +6613,7 @@ function renderOverview(){
         <div class="home-hero">
           <div class="hh-greet">${greet}</div>
           <div class="hh-name">Rushika</div>
-          <div class="hh-sub">Welcome back — let's make today shine.</div>
-        </div>
-        <div class="home-actions">
-          <button class="home-tile primary" onclick="openSaleModal()">
-            <span class="ht-ico" aria-hidden="true">&#128179;</span><span class="ht-label">Record a Sale</span>
-          </button>
-          <button class="home-tile" onclick="openCustomerModal()">
-            <span class="ht-ico" aria-hidden="true">&#43;</span><span class="ht-label">Add a Customer</span>
-          </button>
+          <div class="hh-sub">${hr < 12 ? 'A fresh day to shine.' : (hr < 17 ? 'Hope sales are sparkling.' : 'Winding down — nicely done today.')}</div>
         </div>
         <div class="home-chat">
           <div class="hc-title">Ask me anything</div>
