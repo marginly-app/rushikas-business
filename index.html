@@ -3990,6 +3990,7 @@ function bankBalance(bankId){
 
 /* ================= INVENTORY ================= */
 function openModal(item){
+  scanAddForSale = false;   // addScannedPiece() re-sets this AFTER calling openModal()
   document.getElementById('overlay').classList.add('show');
   if(item){
     document.getElementById('modalTitle').textContent = 'Edit Item';
@@ -4015,6 +4016,7 @@ async function saveItem(){
   const name = document.getElementById('fName').value.trim();
   if(!name){ alert('Please enter an item name.'); return; }
   const editId = document.getElementById('editId').value;
+  let createdItemId = '';
   const data = {
     name,
     sku: document.getElementById('fSku').value.trim() || '—',
@@ -4029,9 +4031,23 @@ async function saveItem(){
     const idx = state.items.findIndex(i=>i.id===editId);
     if(idx>-1) state.items[idx] = {...state.items[idx], ...data};
   } else {
-    state.items.push({id:'item_'+Date.now(), ...data});
+    createdItemId = 'item_'+Date.now();
+    state.items.push({id:createdItemId, ...data});
   }
   await persist(); closeModal(); renderAll();
+  // Piece created from a scan during a sale → drop it straight into that sale.
+  if(scanAddForSale && createdItemId){
+    try{
+      if(document.getElementById('saleOverlay')?.classList.contains('show')){
+        const sel = document.getElementById('sItemSelect');
+        if(sel && typeof itemOptionsHtml === 'function'){
+          sel.innerHTML = itemOptionsHtml({ inStockOnly:true, includeId: createdItemId });
+        }
+        pickSaleItem(createdItemId);
+      }
+    }catch(e){ /* the piece is saved regardless */ }
+  }
+  scanAddForSale = false;
 }
 async function deleteItem(id){
   if(!confirm('Remove this item from inventory? Purchase and sale history will be kept but will show as "deleted item".')) return;
@@ -4650,14 +4666,10 @@ function renderPurchases(){
 /* ================= SALES ================= */
 function openSaleModal(editRecord){
   const isEdit = !!editRecord;
-  if(!isEdit && state.items.length === 0){
-    alert('Add at least one inventory item before recording a sale.');
-    return;
-  }
-  if(!isEdit && inStockItemCount() === 0){
-    alert('Everything is out of stock right now. Record a purchase to add stock before making a sale.');
-    return;
-  }
+  /* No stock pre-check here: the sale modal always opens so you can reach the
+     Scan button and add a piece on the spot (scan an unknown tag → add it as a
+     new piece). saveSale() still requires a selected item + quantity, so an
+     empty sale can't be recorded by accident. */
   document.getElementById('saleModalTitle').textContent = isEdit ? 'Edit Sale' : 'Record Sale';
   document.getElementById('sEditId').value = isEdit ? editRecord.id : '';
   document.getElementById('sPaidNowWrap').style.display = isEdit ? 'none' : 'block';
@@ -4814,6 +4826,7 @@ function scrollSaleActive(){
    Reads the tag's barcode, matches it to an in-stock piece by SKU, and drops it
    straight into the sale. No network, no library — everything runs on the phone.  */
 let scanStream = null, scanDetector = null, scanRunning = false, scanRaf = 0, scanAudioCtx = null;
+let lastUnknownScan = '', scanAddForSale = false;   // "scan an unknown tag → add it as a new piece" flow
 
 /* Two offline decoders, same .detect(video) shape so the scan loop below doesn't
    care which one runs:
@@ -4959,11 +4972,15 @@ function onScanCode(raw){
   if(!code){ scanRaf = requestAnimationFrame(scanLoop); return; }
   const item = matchScannedItem(code);
   if(!item){
-    result.className = 'scan-result warn';
-    result.textContent = `No piece matches “${code}”. Try again, or type the name.`;
+    lastUnknownScan = code;
     scanBeep(false);
-    resume(1300);
-    return;
+    result.className = 'scan-result warn';
+    result.innerHTML = `No piece matches “${escapeHtml(code)}” yet.`
+      + `<div class="scan-actions" style="padding:10px 0 0;gap:8px;">`
+      + `<button type="button" class="add-btn" onclick="addScannedPiece()">➕ Add as new piece</button>`
+      + `<button type="button" class="btn-secondary" onclick="resumeScan()">↺ Scan again</button>`
+      + `</div>`;
+    return;   // pause the loop until she chooses; the camera stays live
   }
   if((Number(item.qty) || 0) <= 0){
     result.className = 'scan-result warn';
@@ -4979,6 +4996,28 @@ function onScanCode(raw){
   stopScanStream();
   pickSaleItem(item.id);                                 // fills the item + price into the sale
   setTimeout(() => { document.getElementById('scanOverlay').classList.remove('show'); }, 600);
+}
+
+function resumeScan(){
+  const result = document.getElementById('scanResult');
+  if(result){ result.textContent = ''; result.className = 'scan-result'; }
+  lastUnknownScan = '';
+  if(scanRunning){ scanRaf = requestAnimationFrame(scanLoop); }
+}
+
+/* Scanned a tag that's not in inventory yet → open the Add Item form right now
+   with the scanned barcode pre-filled as the SKU. If we came from a sale, the
+   new piece is dropped straight into that sale after it's saved. */
+function addScannedPiece(){
+  const code = lastUnknownScan;
+  stopScanStream();
+  document.getElementById('scanOverlay')?.classList.remove('show');
+  const saleOpen = !!document.getElementById('saleOverlay')?.classList.contains('show');
+  openModal();                                     // Add Item form (fields cleared, flag reset)
+  scanAddForSale = saleOpen;                        // set AFTER openModal so it isn't cleared
+  const sku = document.getElementById('fSku'); if(sku) sku.value = code;
+  const qty = document.getElementById('fQty'); if(qty && !qty.value) qty.value = 1;
+  const nm  = document.getElementById('fName'); if(nm){ try{ nm.focus(); }catch(e){} }
 }
 
 function scanBeep(ok){
