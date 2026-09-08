@@ -10,10 +10,11 @@
    - Icons/manifest are cache-first (they rarely change and load instantly).
 
    Bump CACHE_NAME whenever you deploy a new index.html. */
-const CACHE_NAME = 'rushika-app-v17';
+const CACHE_NAME = 'rushika-app-v18';
 const ASSETS = [
   './',
   './index.html',
+  './vendor-zxing.js',
   './manifest.webmanifest',
   './icon-192.png',
   './icon-512.png',

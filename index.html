@@ -34,6 +34,10 @@ if('serviceWorker' in navigator){
   });
 }
 </script>
+<!-- ZXing barcode decoder, vendored (Apache-2.0) so the scanner works offline
+     AND on browsers without the built-in BarcodeDetector API — e.g. iOS Safari
+     and Samsung Internet. Cached by the service worker; no network needed. -->
+<script src="vendor-zxing.js"></script>
 <script>
 /* SheetJS 0.18.5 (Apache-2.0) inlined so Excel import works with no internet. */
 /*! xlsx.js (C) 2013-present SheetJS -- http://sheetjs.com */
@@ -4811,9 +4815,65 @@ function scrollSaleActive(){
    straight into the sale. No network, no library — everything runs on the phone.  */
 let scanStream = null, scanDetector = null, scanRunning = false, scanRaf = 0, scanAudioCtx = null;
 
+/* Two offline decoders, same .detect(video) shape so the scan loop below doesn't
+   care which one runs:
+     • BarcodeDetector — built into Chromium (Android Chrome, Edge, desktop Chrome).
+     • ZXing (vendored) — pure-JS fallback for browsers without BarcodeDetector,
+       e.g. iOS Safari and Samsung Internet. */
+function barcodeDetectorSupported(){ return typeof window !== 'undefined' && ('BarcodeDetector' in window); }
+function zxingSupported(){ return typeof window !== 'undefined' && window.ZXing && window.ZXing.MultiFormatReader; }
+
 function scannerSupported(){
-  return typeof window !== 'undefined' && ('BarcodeDetector' in window)
-    && navigator.mediaDevices && typeof navigator.mediaDevices.getUserMedia === 'function';
+  return typeof navigator !== 'undefined' && navigator.mediaDevices
+    && typeof navigator.mediaDevices.getUserMedia === 'function'
+    && (barcodeDetectorSupported() || zxingSupported());
+}
+
+/* ZXing adapter — .detect(video) → [{rawValue}] like BarcodeDetector. Pure-JS
+   decode is heavy, so throttle to ~8fps and cap the frame width. Deterministic
+   grayscale → RGBLuminanceSource (ZXing's canvas source alternates inverting the
+   frame, which misses ~half the time). */
+function makeZxingDetector(){
+  const Z = window.ZXing;
+  const reader = new Z.MultiFormatReader();
+  const hints = new Map();
+  hints.set(Z.DecodeHintType.POSSIBLE_FORMATS, [
+    Z.BarcodeFormat.QR_CODE, Z.BarcodeFormat.CODE_128, Z.BarcodeFormat.CODE_39,
+    Z.BarcodeFormat.EAN_13, Z.BarcodeFormat.EAN_8, Z.BarcodeFormat.UPC_A,
+    Z.BarcodeFormat.UPC_E, Z.BarcodeFormat.ITF, Z.BarcodeFormat.CODABAR
+  ]);
+  hints.set(Z.DecodeHintType.TRY_HARDER, true);
+  reader.setHints(hints);
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  let last = 0;
+  return {
+    detect(video){
+      const now = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+      if(now - last < 120) return [];
+      last = now;
+      const vw = video.videoWidth, vh = video.videoHeight;
+      if(!vw || !vh) return [];
+      const scale = Math.min(1, 640 / vw);
+      const w = Math.max(1, Math.round(vw * scale)), h = Math.max(1, Math.round(vh * scale));
+      canvas.width = w; canvas.height = h;
+      ctx.drawImage(video, 0, 0, w, h);
+      try{
+        const img = ctx.getImageData(0, 0, w, h).data;
+        const lum = new Uint8ClampedArray(w * h);
+        for(let i = 0, j = 0; i < img.length; i += 4, j++){
+          lum[j] = (img[i] * 0.299 + img[i+1] * 0.587 + img[i+2] * 0.114) | 0;
+        }
+        const src = new Z.RGBLuminanceSource(lum, w, h);
+        const res = reader.decode(new Z.BinaryBitmap(new Z.HybridBinarizer(src)));
+        return res ? [{ rawValue: res.getText() }] : [];
+      }catch(e){
+        return [];
+      }finally{
+        try{ reader.reset(); }catch(e){}
+      }
+    }
+  };
 }
 
 async function openScanner(){
@@ -4827,16 +4887,20 @@ async function openScanner(){
   if(!scannerSupported()){
     hint.textContent = '';
     result.className = 'scan-result warn';
-    result.textContent = "This browser can't use the camera to scan. Open the app in Chrome, or type the piece name instead.";
+    result.textContent = "This device can't open the camera here. Make sure you're using the installed app (or the https link), allow camera access, or type the piece name instead.";
     return;
   }
   try{
-    let formats = ['code_128','code_39','ean_13','ean_8','upc_a','upc_e','itf','codabar','qr_code'];
-    try{
-      const sup = await window.BarcodeDetector.getSupportedFormats();
-      if(sup && sup.length) formats = sup.filter(f => formats.includes(f)).length ? sup.filter(f => formats.includes(f)) : sup;
-    }catch(e){}
-    scanDetector = new window.BarcodeDetector({ formats });
+    if(barcodeDetectorSupported()){
+      let formats = ['code_128','code_39','ean_13','ean_8','upc_a','upc_e','itf','codabar','qr_code'];
+      try{
+        const sup = await window.BarcodeDetector.getSupportedFormats();
+        if(sup && sup.length) formats = sup.filter(f => formats.includes(f)).length ? sup.filter(f => formats.includes(f)) : sup;
+      }catch(e){}
+      scanDetector = new window.BarcodeDetector({ formats });
+    }else{
+      scanDetector = makeZxingDetector();   // iOS Safari, Samsung Internet, etc.
+    }
     scanStream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:'environment' }, audio:false });
     const video = document.getElementById('scanVideo');
     video.srcObject = scanStream;
